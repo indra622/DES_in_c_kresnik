@@ -5,11 +5,6 @@
 #define SIZE 64
 
 
-//prototype def
-void round(int interText[]);
-void final_perm(int lastText[]);
-void keyGenerate(char* key);
-
 //tables
 static int parity_drop[56] = { 57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2, 59, 51, 43, 35, 27, 19, 11, 3, 60, 52, 44, 36, 63, 55, 47, 39, 31, 23, 15, 7, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37, 29, 21, 13, 5, 28, 20, 12, 4 };
 
@@ -200,11 +195,51 @@ int* division_right(int arr[]){
 	return result;
 }
 
+int* parityDrop(int key[]){
+	int result[56] = { 0 }; //56비트 짜리 어레이 만듬
+	int i = 0, j = 0;
+
+
+	for (i = 0; i < SIZE; i++){
+		if (key[i] == 1)
+			for (j = 0; j < 56; j++){
+				if (i == parity_drop[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
+					result[j] = 1;
+				else
+					continue;
+			}
+		else
+			continue;
+	}
+
+	return result;
+}
+
+//key generator 만들기
+void keyGenerate(char* key){
+
+	
+
+
+
+
+	
+}
+
+
 int main(void){
 
 	int i = 0; // for loop
-	char str[SIZE];
-	scanf_s("%s", &str, sizeof(str));
+	char str[SIZE] = "123456abcd132536";
+	char key[SIZE] = "aabb09182736ccdd";
+	
+	////평문 받기
+	//printf("input your hex text");
+	//scanf_s("%s", &str, sizeof(str));
+	////키 받기
+	//printf("input your key");
+	//scanf_s("%s", &key, sizeof(key));
+
 	//16진수를 2진수로 변환
 	int hexInput[SIZE] = { 0 };
 	int ipInput[SIZE] = { 0 };
@@ -212,6 +247,9 @@ int main(void){
 	int left[SIZE / 2] = { 0 };
 	int right[SIZE / 2] = { 0 };
 	int pbox[SIZE * 3 / 4] = { 0 };
+	int binKey[SIZE];
+	int afterparity[56];
+
 	//확인
 	printf("=======16진수 변환 input=======\n");
 	for (i = 0; i < SIZE; i++){
@@ -249,7 +287,24 @@ int main(void){
 		pbox[i] = exp_pbox(right)[i];
 		printf("%d", pbox[i]);
 	}
+
+	//key 구하기 밑밥 _ 패리티 준비
+
+	printf("\n==========key binary==========\n");
+	for (i = 0; i < SIZE; i++){
+		binKey[i] = hextobin(key)[i];
+		printf("%d", binKey[i]);
+	}
+
+	printf("\n==========parity drop==========\n");
+	for (i = 0; i < 56; i++){
+		afterparity[i] = parityDrop(binKey)[i];
+		printf("%d", afterparity[i]);
+	}
+
+	//여기부터 라운드 모드!!!!!!!!!!!
 	
+	keyGenerate(key);
 	
 
 	system("pause");
