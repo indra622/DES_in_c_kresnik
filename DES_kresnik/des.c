@@ -217,12 +217,41 @@ int* parityDrop(int key[]){
 
 //key generator 만들기
 //이 안에서 양쪽으로 나누고 쉬프트해서 다시 돌리고 하튼 그럴거임
-void keyGenerate(char* key, int flag){ //flag로 두칸 쉬프트하는지 아닌지 결정할거임
+void keyGenerate(char* key, int flag){ //flag로 두칸 쉬프트하는지 아닌지 결정할거임 flag ==1 일떈 1번, 2일땐 2번
 
-	
+	//나누기
+	int left[28];
+	int right[28];
+	int i = 0, j = 0;
+	int temp = 0;
 
+	//for (i = 0; i < 56; i++) {
+	//	if (i < 28)
+	//		left[i] = key[i];
+	//	else if (i < 56)
+	//		right[i] = key[i];
+	//	else
+	//		printf("키 레프트 라이트 나눌때 56보다 크거나 음수가 나와버린 것 같습니다.\n");
+	//}
 
+	//이제 열심히 쉬프트하면됨
+	if (flag != 0 || flag != 1) {
+		printf("flag가 0 혹은 1이 아니네요. 문제입니다. flag를 0 혹은 1로 넣어주세요");
+		exit(1);
+	}
+		
+	//left shift
+	for (j = 0; j < flag; j++) {
+		for (i = 0; i < 27; i++) {
+			temp = left[0];
+			left[i] = left[i + 1];
+			left[27] = temp;
 
+			temp = right[0];
+			right[i] = right[i + 1];
+			right[27] = temp;
+		}
+	}
 
 	
 }
@@ -247,6 +276,8 @@ int main(void){
 	char output[SIZE / 2] = {NULL};
 	int left[SIZE / 2] = { 0 };
 	int right[SIZE / 2] = { 0 };
+	int leftKey[28] = { 0 };
+	int rightKey[28] = { 0 };
 	int pbox[SIZE * 3 / 4] = { 0 };
 	int binKey[SIZE];
 	int afterparity[56];
@@ -301,11 +332,29 @@ int main(void){
 	for (i = 0; i < 56; i++){
 		afterparity[i] = parityDrop(binKey)[i];
 		printf("%d", afterparity[i]);
+		if (i < 28)
+			leftKey[i] = afterparity[i];
+		else if (i < 56)
+			rightKey[i] = afterparity[i];
+		else{
+			printf("키 레프트 라이트 나눌때 56보다 크거나 음수가 나와버린 것 같습니다.\n");
+			exit(1);
+		}
+
 	}
 
 	//여기부터 라운드 모드!!!!!!!!!!!
 	
-	keyGenerate(key);
+	//라운드에서 이루어져야 할 일
+	//1. 레프트랑 라이트를 받는다
+	//2. 키의 레프트랑 라이트를 받는다. 쉬프트도 한다.
+	//3. 라이트에 익스펜션을 한다.
+	//4. 키를 compression 한다.
+	//5. 익스펜션한 라이트랑 키랑 xor한다.
+	//6. xor한거를 라이트에 넣고 라이트를 레프트에 넣는다.
+	//7. 라이트랑 레프트, 키 라이트랑 레프트를 반환한다.
+	//8. 이짓을 16번 한다. 끝
+	//필요한 함수 : compression, xor, left shift, swap.
 	
 
 	system("pause");
