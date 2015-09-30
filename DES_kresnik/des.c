@@ -216,7 +216,8 @@ int* parityDrop(int key[]){
 }
 
 //key generator 만들기
-void keyGenerate(char* key){
+//이 안에서 양쪽으로 나누고 쉬프트해서 다시 돌리고 하튼 그럴거임
+void keyGenerate(char* key, int flag){ //flag로 두칸 쉬프트하는지 아닌지 결정할거임
 
 	
 
