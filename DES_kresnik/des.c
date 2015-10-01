@@ -349,23 +349,42 @@ int* exp_pbox(int afterip[]){
 //
 //	return result;
 //}
-
 int* str_pbox(int aftersbox[]) {
-	int result[32] = { 0 }; //32비트 짜리 어레이 만듬
-	int i = 0;
-	int temp = 0;
+	int result[32] = { 0 }; //48비트 짜리 어레이 만듬
+	int i = 0, j = 0;
+
 
 	for (i = 0; i < 32; i++) {
-		if (aftersbox[i] == 1){
-			temp = straight_pbox[i]-1;
-			result[temp] = 1;
-		}
+		if (aftersbox[i] == 1)
+			for (j = 0; j < 32; j++) {
+				if (i == straight_pbox[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
+					result[j] = 1;
+				else
+					continue;
+			}
 		else
 			continue;
 	}
 
 	return result;
 }
+
+//int* str_pbox(int aftersbox[]) {
+//	int result[32] = { 0 }; //32비트 짜리 어레이 만듬
+//	int i = 0;
+//	int temp = 0;
+//
+//	for (i = 0; i < 32; i++) {
+//		if (aftersbox[i] == 1){
+//			temp = straight_pbox[i]-1;
+//			result[temp] = 1;
+//		}
+//		else
+//			continue;
+//	}
+//
+//	return result;
+//}
 
 //왼쪽 부분 자르기
 int* division_left(int arr[]){ 
@@ -425,6 +444,19 @@ int* cal_xor(int expansion[], int key[]){
 	return result;
 }
 
+int* cal_xor_next(int left[], int after_f[]) {
+	int i = 0;
+	int result[32] = { 0 };
+
+	for (i = 0; i < 32; i++) {
+		if (left[i] == after_f[i]) {
+			result[i] = 0;
+		}
+		else
+			result[i] = 1;
+	}
+	return result;
+}
 //라운드에서 이루어져야 할 일
 //1. 레프트랑 라이트를 받는다
 //2. 키의 레프트랑 라이트를 받는다. 쉬프트도 한다.
@@ -449,6 +481,7 @@ roundelement round(roundelement re, int num) {
 	int compressing_key[56] = { 0 };
 	int compressed_key[48] = { 0 };
 	int after_xor[48] = { 0 };
+	int after_xor_f[32] = { 0 };
 	int division_for_sbox[8][6] = { 0 };
 	char roundKeyTest[24] = { NULL };
 	int after_sbox[32] = { 0 };
@@ -585,7 +618,11 @@ roundelement round(roundelement re, int num) {
 		//sbox[i][col][row] 이 값을 이진법으로 바꿔서 넣어야 함
 
 		temp = sbox[i][col][row];
-		for (j = 3; j > 0; j--) {
+		//printf("\n===========에스박스 확인\n");
+		//printf("%d ", temp);
+
+
+		for (j = 3; j >= 0; j--) {
 			after_sbox[j+(i*4)] = temp % 2;
 			temp /= 2;
 		}
@@ -611,11 +648,19 @@ roundelement round(roundelement re, int num) {
 	//}
 
 	//straight pbox하기!!!!
+	for (i = 0; i < 32; i++) {
+		after_ssbox[i] = str_pbox(after_sbox)[i];
+	}
+	//그리고 얘를 left랑 xor하기
+	for (i = 0; i < 32; i++) {
+		after_xor_f[i] = cal_xor_next(re.left, after_ssbox)[i];
+	}
+
 	//그리고 swap하기
 
 	for (i = 0; i < 32; i++) {
 		result.left[i] = re.right[i];
-		result.right[i] = str_pbox(after_sbox)[i]; //결과값 바로 라이트로 보냄
+		result.right[i] = after_xor_f[i]; //결과값 바로 라이트로 보냄
 	}
 
 	return result;
