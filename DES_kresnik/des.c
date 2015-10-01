@@ -26,7 +26,14 @@ static int sbox[8][16][4] = { { 14, 0, 4, 15, 4, 15, 1, 12, 13, 7, 14, 8, 1, 4, 
 { 12, 10, 9, 4, 1, 15, 14, 3, 10, 4, 15, 2, 15, 2, 5, 12, 9, 7, 2, 9, 2, 12, 8, 5, 6, 9, 12, 15, 8, 5, 3, 10, 0, 6, 7, 11, 13, 1, 0, 14, 3, 13, 4, 1, 4, 14, 10, 7, 14, 0, 1, 6, 7, 11, 13, 0, 5, 3, 11, 8, 11, 8, 6, 13 },
 { 4, 13, 1, 6, 11, 0, 4, 11, 2, 11, 11, 13, 14, 7, 13, 8, 15, 4, 12, 1, 0, 9, 3, 4, 8, 1, 7, 10, 13, 10, 14, 7, 3, 14, 10, 9, 12, 3, 15, 5, 9, 5, 6, 0, 7, 12, 8, 15, 5, 2, 0, 14, 10, 15, 5, 2, 6, 8, 9, 3, 1, 6, 2, 12 },
 { 13, 1, 7, 2, 2, 15, 11, 1, 8, 13, 4, 14, 4, 8, 1, 7, 6, 10, 9, 4, 15, 3, 12, 10, 11, 7, 14, 8, 1, 4, 2, 13, 10, 12, 0, 15, 9, 5, 6, 12, 3, 6, 10, 9, 14, 11, 13, 0, 5, 0, 15, 3, 0, 14, 3, 5, 12, 9, 5, 6, 7, 2, 8, 11 } };
+//[16][4]가 8개 있다고 생각하면 됨
+typedef struct roundelement{
+	int left[SIZE / 2];
+	int right[SIZE / 2];
+	int leftKey[28];
+	int rightKey[28];
 
+}roundelement;
 
 int* init_perm(int plain[]){
 
@@ -215,45 +222,105 @@ int* parityDrop(int key[]){
 	return result;
 }
 
-//key generator 만들기
-//이 안에서 양쪽으로 나누고 쉬프트해서 다시 돌리고 하튼 그럴거임
-void keyGenerate(char* key, int flag){ //flag로 두칸 쉬프트하는지 아닌지 결정할거임 flag ==1 일떈 1번, 2일땐 2번
+//xor계산 함수 만들기
+int* cal_xor(int expansion[], int key[]){
+	int i = 0;
+	int result[28] = { 0 };
 
+	for (i = 0; i < 28; i++){
+		if (expansion[i] == key[i]){
+			result[i] = 0;
+		}
+		else
+			result[i] = 1;
+	}
+	return result;
+}
+
+//라운드에서 이루어져야 할 일
+//1. 레프트랑 라이트를 받는다
+//2. 키의 레프트랑 라이트를 받는다. 쉬프트도 한다.
+//3. 라이트에 익스펜션을 한다.
+//4. 키를 compression 한다.
+//5. 익스펜션한 라이트랑 키랑 xor한다.
+// s-box를 돌린다.
+// straight s-box를 돌린다.
+//6. xor한거를 라이트에 넣고 라이트를 레프트에 넣는다.
+//7. 라이트랑 레프트, 키 라이트랑 레프트를 반환한다.
+//8. 이짓을 16번 한다. 끝
+//필요한 함수 : compression, xor, left shift, swap.
+roundelement round(roundelement re){
+	
 	//나누기
-	int left[28];
-	int right[28];
+	roundelement result;
+	memset(&result, 0, sizeof(result));
 	int i = 0, j = 0;
 	int temp = 0;
+	int flag = 0; //flag가 1이면 1번 shift, 2이면 2번 shift
+	int pbox[SIZE * 3 / 4] = { 0 };
+	int compressing_key[56] = { 0 };
+	int compressed_key[48] = { 0 };
+	int after_xor[48] = { 0 };
+	
+	// 받아온 키를 대입함
+	for (i = 0; i < 28; i++){
 
-	//for (i = 0; i < 56; i++) {
-	//	if (i < 28)
-	//		left[i] = key[i];
-	//	else if (i < 56)
-	//		right[i] = key[i];
-	//	else
-	//		printf("키 레프트 라이트 나눌때 56보다 크거나 음수가 나와버린 것 같습니다.\n");
-	//}
-
-	//이제 열심히 쉬프트하면됨
-	if (flag != 0 || flag != 1) {
-		printf("flag가 0 혹은 1이 아니네요. 문제입니다. flag를 0 혹은 1로 넣어주세요");
-		exit(1);
+		result.leftKey[i] = re.leftKey[i];
+		result.rightKey[i] = re.rightKey[i];
 	}
-		
-	//left shift
+	
+	//key를 받아서 shift하기
+	//left shift in right and left
 	for (j = 0; j < flag; j++) {
 		for (i = 0; i < 27; i++) {
-			temp = left[0];
-			left[i] = left[i + 1];
-			left[27] = temp;
+			temp = result.leftKey[0];
+			result.leftKey[i] = result.leftKey[i + 1];
+			result.leftKey[27] = temp;
 
-			temp = right[0];
-			right[i] = right[i + 1];
-			right[27] = temp;
+			temp = result.rightKey[0];
+			result.rightKey[i] = result.rightKey[i + 1];
+			result.rightKey[27] = temp;
+		}
+	}
+	//key를 합치기 (compression pbox)
+	for (i = 0; i < 56; i++){
+		if (i < 28)
+			compressing_key[i] = result.leftKey[i];
+		else if (i < 56){
+			compressing_key[i] = result.rightKey[i-28];
 		}
 	}
 
-	
+	for (i = 0; i < 56; i++){
+		if (compressing_key[i] == 1)
+			for (j = 0; j < 48; j++){
+				if (i == compression_table[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
+					compressed_key[j] = 1;
+				else
+					continue;
+			}
+		//result[initial_permutation[i+1]] = 1;
+		else
+			continue;
+	}
+
+	//key compression 끝!
+
+
+	//이제 익스펜션
+	//expansion pbox 돌리기
+	printf("\n=======after IP hex =======\n");
+	for (i = 0; i < SIZE * 3 / 4; i++){
+		pbox[i] = exp_pbox(re.right)[i];
+		printf("%d", pbox[i]);
+	}
+
+	//xor연산한거 저장하기
+	for (i = 0; i < 48; i++){
+		after_xor[i] = cal_xor(pbox, compressed_key)[i];
+	}
+	//저장한거 sbox돌리기
+
 }
 
 
@@ -278,7 +345,7 @@ int main(void){
 	int right[SIZE / 2] = { 0 };
 	int leftKey[28] = { 0 };
 	int rightKey[28] = { 0 };
-	int pbox[SIZE * 3 / 4] = { 0 };
+
 	int binKey[SIZE];
 	int afterparity[56];
 
@@ -311,13 +378,6 @@ int main(void){
 	for (i = 0; i < SIZE / 2; i++){
 		right[i] = division_right(ipInput)[i];
 		printf("%d", right[i]);
-	}
-
-	//expansion pbox 돌리기
-	printf("\n=======after IP hex =======\n");
-	for (i = 0; i < SIZE *3/4; i++){
-		pbox[i] = exp_pbox(right)[i];
-		printf("%d", pbox[i]);
 	}
 
 	//key 구하기 밑밥 _ 패리티 준비
