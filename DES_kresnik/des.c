@@ -157,7 +157,83 @@ char* bintohex(int* bin){
 	}
 	return hex;
 }
+char* bintohexForRoundKey(int* bin) {
+	int i = 0, j = 0;
+	char hex[12];
+	int temp = 0;
+	for (j = 0; j < 12; j++) {
+		for (i = (j * 4) + 0; i < 4 + (j * 4); i++) {
+			if (bin[i] == 1) // 만일 1이 있으면
+				if (i % 4 == 0) // 그리고 2^3 자리면
+					temp += 8; // 8을 더함
+				else if (i % 4 == 1)
+					temp += 4;
+				else if (i % 4 == 2)
+					temp += 2;
+				else if (i % 4 == 3)
+					temp += 1;
+				else
+					printf("이진법 16진법으로 바꾸는데 나머지가 4이상이거나 음수가 나왔다. 이상하다.\n");
+			else
+				continue;
+		}
 
+		switch (temp) {
+		case 0:
+			hex[j] = '0';
+			break;
+		case 1:
+			hex[j] = '1';
+			break;
+		case 2:
+			hex[j] = '2';
+			break;
+		case 3:
+			hex[j] = '3';
+			break;
+		case 4:
+			hex[j] = '4';
+			break;
+		case 5:
+			hex[j] = '5';
+			break;
+		case 6:
+			hex[j] = '6';
+			break;
+		case 7:
+			hex[j] = '7';
+			break;
+		case 8:
+			hex[j] = '8';
+			break;
+		case 9:
+			hex[j] = '9';
+			break;
+		case 10:
+			hex[j] = 'a';
+			break;
+		case 11:
+			hex[j] = 'b';
+			break;
+		case 12:
+			hex[j] = 'c';
+			break;
+		case 13:
+			hex[j] = 'd';
+			break;
+		case 14:
+			hex[j] = 'e';
+			break;
+		case 15:
+			hex[j] = 'f';
+			break;
+		default:
+			printf("원래 16진수 변환되어야되는데 0~15 이외의 값이 들어왔다. 이상하다.\n");
+		}
+		temp = 0; // 한 자리수 만들고 다시 0으로 초기화 시켜줌
+	}
+	return hex;
+}
 //expansion pbox
 int* exp_pbox(int afterip[]){
 	int result[SIZE * 3 / 4] = { 0 }; //48비트 짜리 어레이 만듬
@@ -249,27 +325,43 @@ int* cal_xor(int expansion[], int key[]){
 //7. 라이트랑 레프트, 키 라이트랑 레프트를 반환한다.
 //8. 이짓을 16번 한다. 끝
 //필요한 함수 : compression, xor, left shift, swap.
-roundelement round(roundelement re){
+roundelement round(roundelement re, int num){
 	
 	//나누기
 	roundelement result;
 	memset(&result, 0, sizeof(result));
 	int i = 0, j = 0;
 	int temp = 0;
-	int flag = 0; //flag가 1이면 1번 shift, 2이면 2번 shift
+	int flag = 1; //flag가 1이면 1번 shift, 2이면 2번 shift
 	int pbox[SIZE * 3 / 4] = { 0 };
 	int compressing_key[56] = { 0 };
 	int compressed_key[48] = { 0 };
 	int after_xor[48] = { 0 };
-	
+	int division_for_sbox[8][6] = { 0 };
+	char roundKeyTest[24] = { NULL };
+	//printf("\n==키 확인합니다\n");
 	// 받아온 키를 대입함
 	for (i = 0; i < 28; i++){
 
 		result.leftKey[i] = re.leftKey[i];
+		//printf("%d", result.leftKey[i]);
+		
 		result.rightKey[i] = re.rightKey[i];
+		
 	}
 	
 	//key를 받아서 shift하기
+	if (num == 1 | 2 | 9 | 16) {
+		flag = 1;
+	}
+	else if (num == 3 | 4 | 5 | 6 | 7 | 8 | 10 | 11 | 12 | 13 | 14 | 15) {
+		flag = 2;
+	}
+	else{
+		printf("16라운드 돌려야 되는데 횟수 값이 16이 넘어가거나 음수가 나왔습니다. 이상합니다.");
+		exit(1);
+	}
+
 	//left shift in right and left
 	for (j = 0; j < flag; j++) {
 		for (i = 0; i < 27; i++) {
@@ -282,12 +374,16 @@ roundelement round(roundelement re){
 			result.rightKey[27] = temp;
 		}
 	}
+
 	//key를 합치기 (compression pbox)
 	for (i = 0; i < 56; i++){
 		if (i < 28)
 			compressing_key[i] = result.leftKey[i];
 		else if (i < 56){
 			compressing_key[i] = result.rightKey[i-28];
+		}
+		else {
+			printf("뭔가 이상합니다. 키 합치기에서 i값이 음수이거나 지정한 것보다 커요");
 		}
 	}
 
@@ -299,12 +395,24 @@ roundelement round(roundelement re){
 				else
 					continue;
 			}
-		//result[initial_permutation[i+1]] = 1;
 		else
 			continue;
 	}
 
 	//key compression 끝!
+	//라운드 키 제대로 나왔나 확인
+
+	//printf("\n=============compressed key\n");
+	//for (i = 0; i < 48; i++) {
+	//	
+	//	printf("%d", compressed_key[i]);
+	//}
+
+	//printf("\n=============라운드 키 확인합니다\n");
+	//for (i = 0; i < 12; i++) {
+	//	roundKeyTest[i] = bintohexForRoundKey(compressed_key)[i];
+	//}
+	//printf("%s", roundKeyTest);
 
 
 	//이제 익스펜션
@@ -320,7 +428,9 @@ roundelement round(roundelement re){
 		after_xor[i] = cal_xor(pbox, compressed_key)[i];
 	}
 	//저장한거 sbox돌리기
-
+	
+	//일단 after_xor을 6개씩으로 나눕시다
+	
 }
 
 
@@ -348,6 +458,8 @@ int main(void){
 
 	int binKey[SIZE];
 	int afterparity[56];
+	roundelement res;
+	memset(&res, 0, sizeof(res));
 
 	//확인
 	printf("=======16진수 변환 input=======\n");
@@ -395,7 +507,7 @@ int main(void){
 		if (i < 28)
 			leftKey[i] = afterparity[i];
 		else if (i < 56)
-			rightKey[i] = afterparity[i];
+			rightKey[i-28] = afterparity[i];
 		else{
 			printf("키 레프트 라이트 나눌때 56보다 크거나 음수가 나와버린 것 같습니다.\n");
 			exit(1);
@@ -405,6 +517,21 @@ int main(void){
 
 	//여기부터 라운드 모드!!!!!!!!!!!
 	
+	//라운드 구조체에 지금까지 한 것들을 넣어 봅시다.
+	
+	//키를 넣어 봅시다 아 값도
+	for (i = 0; i < 32; i++) {
+		res.left[i] = left[i];
+		
+		res.right[i] = right[i];
+	}
+
+	for (i = 0; i < 28; i++) {
+		res.leftKey[i] = leftKey[i];
+		res.rightKey[i] = rightKey[i];
+	}
+
+	round(res, 1);
 	//라운드에서 이루어져야 할 일
 	//1. 레프트랑 라이트를 받는다
 	//2. 키의 레프트랑 라이트를 받는다. 쉬프트도 한다.
