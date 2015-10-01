@@ -301,9 +301,9 @@ int* parityDrop(int key[]){
 //xor계산 함수 만들기
 int* cal_xor(int expansion[], int key[]){
 	int i = 0;
-	int result[28] = { 0 };
+	int result[48] = { 0 };
 
-	for (i = 0; i < 28; i++){
+	for (i = 0; i < 48; i++){
 		if (expansion[i] == key[i]){
 			result[i] = 0;
 		}
@@ -325,8 +325,8 @@ int* cal_xor(int expansion[], int key[]){
 //7. 라이트랑 레프트, 키 라이트랑 레프트를 반환한다.
 //8. 이짓을 16번 한다. 끝
 //필요한 함수 : compression, xor, left shift, swap.
-roundelement round(roundelement re, int num){
-	
+roundelement round(roundelement re, int num) {
+
 	//나누기
 	roundelement result;
 	memset(&result, 0, sizeof(result));
@@ -339,17 +339,19 @@ roundelement round(roundelement re, int num){
 	int after_xor[48] = { 0 };
 	int division_for_sbox[8][6] = { 0 };
 	char roundKeyTest[24] = { NULL };
+	int after_sbox[32] = { 0 };
+	
 	//printf("\n==키 확인합니다\n");
 	// 받아온 키를 대입함
-	for (i = 0; i < 28; i++){
+	for (i = 0; i < 28; i++) {
 
 		result.leftKey[i] = re.leftKey[i];
 		//printf("%d", result.leftKey[i]);
-		
+
 		result.rightKey[i] = re.rightKey[i];
-		
+
 	}
-	
+
 	//key를 받아서 shift하기
 	if (num == 1 | 2 | 9 | 16) {
 		flag = 1;
@@ -357,7 +359,7 @@ roundelement round(roundelement re, int num){
 	else if (num == 3 | 4 | 5 | 6 | 7 | 8 | 10 | 11 | 12 | 13 | 14 | 15) {
 		flag = 2;
 	}
-	else{
+	else {
 		printf("16라운드 돌려야 되는데 횟수 값이 16이 넘어가거나 음수가 나왔습니다. 이상합니다.");
 		exit(1);
 	}
@@ -376,20 +378,20 @@ roundelement round(roundelement re, int num){
 	}
 
 	//key를 합치기 (compression pbox)
-	for (i = 0; i < 56; i++){
+	for (i = 0; i < 56; i++) {
 		if (i < 28)
 			compressing_key[i] = result.leftKey[i];
-		else if (i < 56){
-			compressing_key[i] = result.rightKey[i-28];
+		else if (i < 56) {
+			compressing_key[i] = result.rightKey[i - 28];
 		}
 		else {
 			printf("뭔가 이상합니다. 키 합치기에서 i값이 음수이거나 지정한 것보다 커요");
 		}
 	}
 
-	for (i = 0; i < 56; i++){
+	for (i = 0; i < 56; i++) {
 		if (compressing_key[i] == 1)
-			for (j = 0; j < 48; j++){
+			for (j = 0; j < 48; j++) {
 				if (i == compression_table[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
 					compressed_key[j] = 1;
 				else
@@ -418,18 +420,86 @@ roundelement round(roundelement re, int num){
 	//이제 익스펜션
 	//expansion pbox 돌리기
 	printf("\n=======after IP hex =======\n");
-	for (i = 0; i < SIZE * 3 / 4; i++){
+	for (i = 0; i < SIZE * 3 / 4; i++) {
 		pbox[i] = exp_pbox(re.right)[i];
 		printf("%d", pbox[i]);
 	}
 
 	//xor연산한거 저장하기
-	for (i = 0; i < 48; i++){
+	for (i = 0; i < 48; i++) {
 		after_xor[i] = cal_xor(pbox, compressed_key)[i];
 	}
 	//저장한거 sbox돌리기
-	
+
 	//일단 after_xor을 6개씩으로 나눕시다
+	i = 0;
+	j = 0;
+	while (i < 48) {
+		division_for_sbox[j][i - (j * 6)] = after_xor[i];
+		i++;
+		if (i % 6 == 0) {
+			j++;
+		}
+	}
+	//6자리 수를 분리해서 정리
+	//이진법을 십진법으로 바꿈
+	for (i = 0; i < 8; i++) {
+		int row = 0;
+		int col = 0;
+		int num = 0;
+		int temp = 0;
+		int j = 0;
+
+		if (division_for_sbox[i][0] == 1) {
+			row += 2;
+		}
+		if (division_for_sbox[i][1] == 1) {
+			col += 8;
+		}
+		if (division_for_sbox[i][2] == 1) {
+			col += 4;
+		}
+		if (division_for_sbox[i][3] == 1) {
+			col += 2;
+		}
+		if (division_for_sbox[i][4] == 1) {
+			col += 1;
+		}
+		if (division_for_sbox[i][5] == 1) {
+			row += 1;
+		}
+
+		//sbox[i][col][row] 이 값을 이진법으로 바꿔서 넣어야 함
+
+		temp = sbox[i][col][row];
+		for (j = 3; j > 0; j--) {
+			after_sbox[j+(i*4)] = temp % 2;
+			temp /= 2;
+		}
+	}
+
+	//printf("\n==sbox결과 확인요\n");
+	//for (i = 0; i < 32; i++) {
+	//	printf("%d", after_sbox[i]);
+	//}
+	
+
+	//printf("\nafter_xor확인\n");
+	//for (i = 0; i < 48; i++) {
+	//	printf("%d", after_xor[i]);
+	//}
+
+	//printf("\ndivision_for_sbox확인\n");
+	//for (i = 0; i < 8; i++) {
+	//	for (j = 0; j < 6; j++) {
+	//		printf("%d", division_for_sbox[i][j]);
+	//	}
+	//	printf("\n");
+	//}
+
+	//straight pbox하기!!!!
+
+
 	
 }
 
@@ -520,6 +590,7 @@ int main(void){
 	//라운드 구조체에 지금까지 한 것들을 넣어 봅시다.
 	
 	//키를 넣어 봅시다 아 값도
+	printf("\n라이트 키 확인\n");
 	for (i = 0; i < 32; i++) {
 		res.left[i] = left[i];
 		
