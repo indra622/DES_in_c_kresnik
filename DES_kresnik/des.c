@@ -84,6 +84,7 @@ int* hextobin(char *hex){
 			
 		}
 	
+
 	}
 	/*for (j = 0; j < SIZE; j++)
 		printf("%d", result[j]);*/
@@ -460,11 +461,11 @@ int* cal_xor(int expansion[], int key[]){
 	int result[48] = { 0 };
 
 	for (i = 0; i < 48; i++){
-		if (expansion[i] == key[i]){
-			result[i] = 0;
+		if (expansion[i] != key[i]){
+			result[i] = 1;
 		}
 		else
-			result[i] = 1;
+			result[i] = 0;
 	}
 	return result;
 }
@@ -474,11 +475,11 @@ int* cal_xor_next(int left[], int after_f[]) {
 	int result[32] = { 0 };
 
 	for (i = 0; i < 32; i++) {
-		if (left[i] == after_f[i]) {
-			result[i] = 0;
+		if (left[i] != after_f[i]) {
+			result[i] = 1;
 		}
 		else
-			result[i] = 1;
+			result[i] = 0;
 	}
 	return result;
 }
@@ -500,7 +501,7 @@ roundelement round(roundelement re, int num) {
 	roundelement result;
 	memset(&result, 0, sizeof(result));
 	int i = 0, j = 0;
-	int temp = 0;
+	int tempL = 0, tempR = 0;
 	int flag = 1; //flag가 1이면 1번 shift, 2이면 2번 shift
 	int pbox[SIZE * 3 / 4] = { 0 };
 	int compressing_key[56] = { 0 };
@@ -537,15 +538,15 @@ roundelement round(roundelement re, int num) {
 
 	//left shift in right and left
 	for (j = 0; j < flag; j++) {
+		
+		tempL = result.leftKey[0];
+		tempR = result.rightKey[0];
 		for (i = 0; i < 27; i++) {
-			temp = result.leftKey[0];
 			result.leftKey[i] = result.leftKey[i + 1];
-			result.leftKey[27] = temp;
-
-			temp = result.rightKey[0];
 			result.rightKey[i] = result.rightKey[i + 1];
-			result.rightKey[27] = temp;
 		}
+		result.leftKey[27] = tempL;
+		result.rightKey[27] = tempR;
 	}
 
 	//key를 합치기 (compression pbox)
@@ -560,16 +561,8 @@ roundelement round(roundelement re, int num) {
 		}
 	}
 
-	for (i = 0; i < 56; i++) {
-		if (compressing_key[i] == 1)
-			for (j = 0; j < 48; j++) {
-				if (i == compression_table[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
-					compressed_key[j] = 1;
-				else
-					continue;
-			}
-		else
-			continue;
+	for (i = 0; i < 48; i++) {
+		compressed_key[i] = compressing_key[compression_table[i] - 1];
 	}
 
 	//key compression 끝!
@@ -581,11 +574,11 @@ roundelement round(roundelement re, int num) {
 		printf("%d", compressed_key[i]);
 	}
 
-	//printf("\n=============라운드 키 확인합니다\n");
-	//for (i = 0; i < 12; i++) {
-	//	roundKeyTest[i] = bintohexForRoundKey(compressed_key)[i];
-	//}
-	//printf("%s", roundKeyTest);
+	printf("\n=============라운드 키 확인합니다\n");
+	for (i = 0; i < 12; i++) {
+		roundKeyTest[i] = bintohexForRoundKey(compressed_key)[i];
+	}
+	printf("%s", roundKeyTest);
 
 
 	//이제 익스펜션
@@ -597,8 +590,10 @@ roundelement round(roundelement re, int num) {
 	}
 
 	//xor연산한거 저장하기
+	printf("\n======= xor 연산 확인 =======\n");
 	for (i = 0; i < 48; i++) {
 		after_xor[i] = cal_xor(pbox, compressed_key)[i];
+		printf("%d", after_xor[i]);
 	}
 	//저장한거 sbox돌리기
 
@@ -782,9 +777,12 @@ int main(void){
 		res.left[i] = left[i];
 		res.right[i] = right[i];
 	}
+	printf("\n키 확인좀\n");
 	for (i = 0; i < 28; i++) {
 		res.leftKey[i] = leftKey[i];
+		
 		res.rightKey[i] = rightKey[i];
+		printf("%d", res.rightKey[i]);
 	}
 
 	tempRound = round(res, 1);
