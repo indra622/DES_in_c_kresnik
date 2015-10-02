@@ -67,6 +67,18 @@ int* init_perm(int plain[]) {
 	return result;
 }
 
+int* final_perm(int plain[]) {
+	int result[64] = { 0 }; //48비트 짜리 어레이 만듬
+	int i = 0, j = 0;
+
+
+	for (i = 0; i < 64; i++) {
+		result[i] = plain[final_permutation[i] - 1];
+	}
+
+	return result;
+}
+
 //연산을 위해서 16진수를 2진수로 변환
 int* hextobin(char *hex){
 	int i, h, len = strlen(hex) - 1, buf[8], j = 0;
@@ -502,7 +514,7 @@ roundelement round(roundelement re, int num) {
 	memset(&result, 0, sizeof(result));
 	int i = 0, j = 0;
 	int tempL = 0, tempR = 0;
-	int flag = 1; //flag가 1이면 1번 shift, 2이면 2번 shift
+	int flag = 0; //flag가 1이면 1번 shift, 2이면 2번 shift
 	int pbox[SIZE * 3 / 4] = { 0 };
 	int compressing_key[56] = { 0 };
 	int compressed_key[48] = { 0 };
@@ -512,6 +524,8 @@ roundelement round(roundelement re, int num) {
 	char roundKeyTest[24] = { NULL };
 	int after_sbox[32] = { 0 };
 	int after_ssbox[32] = { 0 };
+	char roundOutL[12] = { NULL };
+	char roundOutR[12] = { NULL };
 	
 	//printf("\n==키 확인합니다\n");
 	// 받아온 키를 대입함
@@ -525,10 +539,10 @@ roundelement round(roundelement re, int num) {
 	}
 
 	//key를 받아서 shift하기
-	if (num == 1 | 2 | 9 | 16) {
+	if (num == 1 || num == 2 || num == 9 || num == 16) {
 		flag = 1;
 	}
-	else if (num == 3 | 4 | 5 | 6 | 7 | 8 | 10 | 11 | 12 | 13 | 14 | 15) {
+	else if (num == 3 || num == 4 || num == 5 || num == 6 || num == 7 || num == 8 || num == 10 || num == 11 || num == 12 || num == 13 || num == 14 || num == 15) {
 		flag = 2;
 	}
 	else {
@@ -568,32 +582,32 @@ roundelement round(roundelement re, int num) {
 	//key compression 끝!
 	//라운드 키 제대로 나왔나 확인
 
-	printf("\n=============compressed key\n");
+	/*printf("\n=============compressed key\n");
 	for (i = 0; i < 48; i++) {
 		
 		printf("%d", compressed_key[i]);
-	}
+	}*/
 
-	printf("\n=============라운드 키 확인합니다\n");
+	//printf("\n=============라운드 키 확인합니다\n");
 	for (i = 0; i < 12; i++) {
 		roundKeyTest[i] = bintohexForRoundKey(compressed_key)[i];
 	}
-	printf("%s", roundKeyTest);
+	//printf("%s", roundKeyTest);
 
 
 	//이제 익스펜션
 	//expansion pbox 돌리기
-	printf("\n======= 익스펜션 돌리고 나서 확인 =======\n");
+	//printf("\n======= 익스펜션 돌리고 나서 확인 =======\n");
 	for (i = 0; i < 48; i++) {
 		pbox[i] = exp_pbox(re.right)[i];
-		printf("%d", pbox[i]);
+	//	printf("%d", pbox[i]);
 	}
 
 	//xor연산한거 저장하기
-	printf("\n======= xor 연산 확인 =======\n");
+	//printf("\n======= xor 연산 확인 =======\n");
 	for (i = 0; i < 48; i++) {
 		after_xor[i] = cal_xor(pbox, compressed_key)[i];
-		printf("%d", after_xor[i]);
+	//	printf("%d", after_xor[i]);
 	}
 	//저장한거 sbox돌리기
 
@@ -675,9 +689,25 @@ roundelement round(roundelement re, int num) {
 		//그리고 얘를 left랑 xor하기
 		after_xor_f[i] = cal_xor_next(re.left, after_ssbox)[i];
 
-		result.left[i] = re.right[i];
-		result.right[i] = after_xor_f[i]; //결과값 바로 라이트로 보냄
+		//16할땐 스왑 안함
+		if (num == 16) {
+			result.right[i] = re.right[i];
+			result.left[i] = after_xor_f[i];
+		}
+		else {
+			result.left[i] = re.right[i];
+			result.right[i] = after_xor_f[i]; //결과값 바로 라이트로 보냄
+		}
+
 	}
+
+	for (i = 0; i < 8; i++) {
+		roundOutL[i] = bintohexForRound(result.left)[i];
+		roundOutR[i] = bintohexForRound(result.right)[i];
+
+	}
+	printf("\nleft \t right\n");
+	printf("%s \t %s", roundOutL, roundOutR);
 
 	return result;
 
@@ -702,11 +732,14 @@ int main(void){
 	int hexInput[SIZE] = { 0 };
 	int ipInput[SIZE] = { 0 };
 	char output[SIZE / 2] = {NULL};
-	char roundOut[12] = { NULL };
+	char ciphered[SIZE / 2] = { NULL };
+	
 	int left[SIZE / 2] = { 0 };
 	int right[SIZE / 2] = { 0 };
 	int leftKey[28] = { 0 };
 	int rightKey[28] = { 0 };
+	int beforeFP[SIZE] = { 0 };
+	int afterFP[SIZE] = { 0 };
 
 	int binKey[SIZE];
 	int afterparity[56];
@@ -785,18 +818,46 @@ int main(void){
 		printf("%d", res.rightKey[i]);
 	}
 
-	tempRound = round(res, 1);
+	/*printf("\n==========Round %d=========\n", 1);
+	tempRound = round(res, 1);*/
+	for (i = 1; i < 17; i++) {
+		printf("\n==========Round %d=========\n", i);
+		res = round(res, i);
+		/*if(i==16)
+			tempRound = res;*/
+	}
+
+	for (i = 0; i < SIZE; i++) {
+		if (i < SIZE/2)
+			beforeFP[i] = res.left[i];
+		else if (i < SIZE) {
+			beforeFP[i] = res.right[i - 32];
+		}
+		else {
+			printf("뭔가 이상합니다. 마지막 결과 합치기에서 i값이 음수이거나 지정한 것보다 커요");
+		}
+	}
+
+	//FP
+	printf("\n=======after FP=======\n");
+	for (i = 0; i < SIZE; i++) {
+		afterFP[i] = final_perm(beforeFP)[i];
+		printf("%d", afterFP[i]);
+	}
+
+	printf("\n=======cipherText=======\n");
+	for (i = 0; i < SIZE / 4; i++) {
+		ciphered[i] = bintohex(afterFP)[i];
+	}
+	printf("%s", ciphered);
 	
 
-	printf("\n원라운드 최종확인 두근두근 1라운드 왼쪽\n");
+	//printf("\n원라운드 최종확인 두근두근 1라운드 왼쪽\n");
 	//for (i = 0; i < 32; i++) {
 	//	printf("%d", tempRound.right[i]);
 	//}
 
-	for (i = 0; i < 8; i++) {
-		roundOut[i] = bintohexForRound(tempRound.right)[i];
-	}
-	printf("%s", roundOut);
+
 
 	//printf("\n원라운드 최종확인 두근두근 1라운드 오른쪽\n");
 	//printf("%s", bintohexForRound(tempRound.right));
