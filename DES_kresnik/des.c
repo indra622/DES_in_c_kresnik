@@ -35,27 +35,37 @@ typedef struct roundelement{
 
 }roundelement;
 
-int* init_perm(int plain[]){
+//int* init_perm(int plain[]){
+//
+//	int result[SIZE] = { 0 };
+//	int i = 0, j = 0;;
+//
+//	for (i = 0; i < SIZE; i++){
+//		if (plain[i] == 1)
+//			for (j = 0; j < SIZE; j++){ 
+//				if (i == initial_permutation[j]-1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
+//					result[j] = 1;
+//				else
+//					continue;
+//			}
+//			//result[initial_permutation[i+1]] = 1;
+//		else
+//			continue;
+//	}
+//
+//	return result;
+//}
+int* init_perm(int plain[]) {
+	int result[64] = { 0 }; //48비트 짜리 어레이 만듬
+	int i = 0, j = 0;
 
-	int result[SIZE] = { 0 };
-	int i = 0, j = 0;;
 
-	for (i = 0; i < SIZE; i++){
-		if (plain[i] == 1)
-			for (j = 0; j < SIZE; j++){ 
-				if (i == initial_permutation[j]-1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
-					result[j] = 1;
-				else
-					continue;
-			}
-			//result[initial_permutation[i+1]] = 1;
-		else
-			continue;
+	for (i = 0; i < 64; i++) {
+		result[i] = plain[initial_permutation[i] - 1];
 	}
 
 	return result;
 }
-
 
 //연산을 위해서 16진수를 2진수로 변환
 int* hextobin(char *hex){
@@ -318,16 +328,8 @@ int* exp_pbox(int afterip[]){
 	int i = 0, j=0;
 
 
-	for (i = 0; i < SIZE / 2 ; i++){
-		if (afterip[i] == 1)
-			for (j = 0; j < SIZE*3/4; j++){
-				if (i == expansion_pbox[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
-					result[j] = 1;
-				else
-					continue;
-			}
-		else
-			continue;
+	for (i = 0; i < 48; i++) {
+		result[i] = afterip[expansion_pbox[i]-1];
 	}
 
 	return result;
@@ -349,25 +351,37 @@ int* exp_pbox(int afterip[]){
 //
 //	return result;
 //}
+
 int* str_pbox(int aftersbox[]) {
 	int result[32] = { 0 }; //48비트 짜리 어레이 만듬
 	int i = 0, j = 0;
 
 
 	for (i = 0; i < 32; i++) {
-		if (aftersbox[i] == 1)
-			for (j = 0; j < 32; j++) {
-				if (i == straight_pbox[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
-					result[j] = 1;
-				else
-					continue;
-			}
-		else
-			continue;
+		result[i] = aftersbox[straight_pbox[i] - 1];
 	}
 
 	return result;
 }
+//int* str_pbox(int aftersbox[]) {
+//	int result[32] = { 0 }; //48비트 짜리 어레이 만듬
+//	int i = 0, j = 0;
+//
+//
+//	for (i = 0; i < 32; i++) {
+//		if (aftersbox[i] == 1)
+//			for (j = 0; j < 32; j++) {
+//				if (i == straight_pbox[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
+//					result[j] = 1;
+//				else
+//					continue;
+//			}
+//		else
+//			continue;
+//	}
+//
+//	return result;
+//}
 
 //int* str_pbox(int aftersbox[]) {
 //	int result[32] = { 0 }; //32비트 짜리 어레이 만듬
@@ -409,25 +423,36 @@ int* division_right(int arr[]){
 	return result;
 }
 
-int* parityDrop(int key[]){
-	int result[56] = { 0 }; //56비트 짜리 어레이 만듬
+int* parityDrop(int key[]) {
+	int result[56] = { 0 }; //48비트 짜리 어레이 만듬
 	int i = 0, j = 0;
 
 
-	for (i = 0; i < SIZE; i++){
-		if (key[i] == 1)
-			for (j = 0; j < 56; j++){
-				if (i == parity_drop[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
-					result[j] = 1;
-				else
-					continue;
-			}
-		else
-			continue;
+	for (i = 0; i < 56; i++) {
+		result[i] = key[parity_drop[i] - 1];
 	}
 
 	return result;
 }
+//int* parityDrop(int key[]){
+//	int result[56] = { 0 }; //56비트 짜리 어레이 만듬
+//	int i = 0, j = 0;
+//
+//
+//	for (i = 0; i < SIZE; i++){
+//		if (key[i] == 1)
+//			for (j = 0; j < 56; j++){
+//				if (i == parity_drop[j] - 1) //테이블에서 찾아서 i값과 맞는 값을 찾아서 그 인덱스에 1을 위치시킨다.
+//					result[j] = 1;
+//				else
+//					continue;
+//			}
+//		else
+//			continue;
+//	}
+//
+//	return result;
+//}
 
 //xor계산 함수 만들기
 int* cal_xor(int expansion[], int key[]){
@@ -647,18 +672,14 @@ roundelement round(roundelement re, int num) {
 	//	printf("\n");
 	//}
 
-	//straight pbox하기!!!!
-	for (i = 0; i < 32; i++) {
-		after_ssbox[i] = str_pbox(after_sbox)[i];
-	}
-	//그리고 얘를 left랑 xor하기
-	for (i = 0; i < 32; i++) {
-		after_xor_f[i] = cal_xor_next(re.left, after_ssbox)[i];
-	}
-
 	//그리고 swap하기
 
 	for (i = 0; i < 32; i++) {
+		//straight pbox하기!!!!
+		after_ssbox[i] = str_pbox(after_sbox)[i];
+		//그리고 얘를 left랑 xor하기
+		after_xor_f[i] = cal_xor_next(re.left, after_ssbox)[i];
+
 		result.left[i] = re.right[i];
 		result.right[i] = after_xor_f[i]; //결과값 바로 라이트로 보냄
 	}
@@ -770,10 +791,15 @@ int main(void){
 	
 
 	printf("\n원라운드 최종확인 두근두근 1라운드 왼쪽\n");
+	//for (i = 0; i < 32; i++) {
+	//	printf("%d", tempRound.right[i]);
+	//}
+
 	for (i = 0; i < 8; i++) {
 		roundOut[i] = bintohexForRound(tempRound.right)[i];
 	}
 	printf("%s", roundOut);
+
 	//printf("\n원라운드 최종확인 두근두근 1라운드 오른쪽\n");
 	//printf("%s", bintohexForRound(tempRound.right));
 	//라운드에서 이루어져야 할 일
